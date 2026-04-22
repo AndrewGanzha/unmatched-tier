@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getDashboardSummary } from "@/modules/dashboard/server/get-dashboard-summary";
 
 const buildSteps = [
@@ -27,49 +28,73 @@ export default async function HomePage() {
   return (
     <main>
       <section className="hero">
-        <span className="eyebrow">Unmatched Admin Panel</span>
-        <h1>Рейтинг, матчи и турниры в одном Next.js приложении.</h1>
+        <span className="eyebrow">Operations Dashboard</span>
+        <h1>Рейтинговая панель для матчей, игроков и турниров Unmatched.</h1>
         <p>
-          Стартовый каркас поднят без отдельного backend-сервиса. Вся серверная логика
-          будет жить в Next.js поверх Prisma и SQLite, а позже без перелома модели сможет
-          перейти на PostgreSQL.
+          Интерфейс переведен в более соревновательный dashboard-стиль: темная операционная
+          панель, быстрые действия, рейтинг, история матчей и рабочие админские сценарии в
+          одном приложении.
         </p>
         <div className="hero-actions">
-          <a className="button primary" href="/api/health">
-            Проверить API
-          </a>
-          <a className="button secondary" href="/leaderboard">
-            Открыть рейтинг
-          </a>
-          <a className="button secondary" href="/players">
-            Открыть игроков
-          </a>
-          <a className="button secondary" href="/heroes">
-            Открыть героев
-          </a>
-          <a className="button secondary" href="/matches/new">
-            Создать матч
-          </a>
+          <Link className="button primary" href="/matches/new">
+            Create 1v1 Match
+          </Link>
+          <Link className="button secondary" href="/leaderboard">
+            Open Leaderboard
+          </Link>
+          <Link className="button secondary" href="/players">
+            Manage Players
+          </Link>
         </div>
       </section>
 
       <section className="section">
-        <h2 className="section-title">Ближайшие шаги</h2>
+        <h2 className="section-title">Quick Actions</h2>
         <div className="grid">
           {buildSteps.map((step, index) => (
-            <article className="card" key={step}>
-              <h3>Шаг {index + 1}</h3>
-              <p>{step}</p>
+            <article className="action-card" key={step}>
+              <div className="action-icon">{index + 1}</div>
+              <div>
+                <h3>Action {index + 1}</h3>
+                <p>{step}</p>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
       <section className="section">
-        <h2 className="section-title">Первые модули</h2>
+        <h2 className="section-title">System State</h2>
+        <div className="stats-grid">
+          <article className="stat-card">
+            <span className="stat-label">PLAYERS</span>
+            <strong>{summary.stats.playerCount}</strong>
+            <p>Игроков в системе</p>
+          </article>
+          <article className="stat-card">
+            <span className="stat-label">ACTIVE HEROES</span>
+            <strong>{summary.stats.activeHeroCount}</strong>
+            <p>Доступных персонажей</p>
+          </article>
+          <article className="stat-card">
+            <span className="stat-label">MATCHES</span>
+            <strong>{summary.stats.matchCount}</strong>
+            <p>Матчей записано</p>
+          </article>
+          <article className="stat-card">
+            <span className="stat-label">TOURNAMENTS</span>
+            <strong>{summary.stats.tournamentCount}</strong>
+            <p>Турнирных сущностей</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">Modules</h2>
         <div className="grid">
           {firstModules.map((module) => (
             <article className="card" key={module.title}>
+              <span className="pill">{module.title.toUpperCase()}</span>
               <h3>{module.title}</h3>
               <p>{module.description}</p>
             </article>
@@ -78,38 +103,27 @@ export default async function HomePage() {
       </section>
 
       <section className="section">
-        <h2 className="section-title">Текущее состояние</h2>
-        <div className="meta">
-          <article className="card">
-            <strong>{summary.stats.playerCount}</strong>
-            <p>Игроков в системе.</p>
-          </article>
-          <article className="card">
-            <strong>{summary.stats.activeHeroCount}</strong>
-            <p>Активных персонажей в каталоге.</p>
-          </article>
-          <article className="card">
-            <strong>{summary.stats.matchCount}</strong>
-            <p>Матчей уже записано в базе.</p>
-          </article>
+        <div className="section-header">
+          <h2 className="section-title">Recent Activity</h2>
+          <a className="section-link" href="/history/matches">
+            View all matches
+          </a>
         </div>
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">Последние матчи</h2>
         <div className="grid">
           {summary.latestMatches.length === 0 ? (
             <article className="card">
-              <h3>Пока пусто</h3>
-              <p>После первого завершенного матча здесь появится история последних встреч.</p>
+              <h3>No Recent Matches</h3>
+              <p>После первого завершенного матча здесь появится оперативная лента встреч.</p>
             </article>
           ) : (
             summary.latestMatches.map((match) => (
-              <article className="card" key={match.id}>
-                <h3>
-                  {match.mode} · {match.status}
-                </h3>
-                <p>{new Date(match.createdAt).toLocaleString("ru-RU")}</p>
+              <article className="match-card" key={match.id}>
+                <div className="inline-meta">
+                  <span className="pill">{match.mode}</span>
+                  <span>{match.status}</span>
+                  <span>{new Date(match.createdAt).toLocaleString("ru-RU")}</span>
+                </div>
+                <h3>Match {match.id}</h3>
                 <ul>
                   {match.sides.map((side) => (
                     <li key={side.id}>
@@ -118,6 +132,9 @@ export default async function HomePage() {
                     </li>
                   ))}
                 </ul>
+                <Link className="section-link" href={`/matches/${match.id}`}>
+                  Open match
+                </Link>
               </article>
             ))
           )}

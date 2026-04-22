@@ -35,11 +35,14 @@ export async function createMatch1v1Action(formData: FormData) {
       id: {
         in: [parsed.data.leftPlayerId, parsed.data.rightPlayerId],
       },
+      user: {
+        isActive: true,
+      },
     },
   });
 
   if (players.length !== 2) {
-    redirect("/matches/new?error=players_not_found");
+    redirect("/matches/new?error=players_not_available");
   }
 
   const leftPlayer = players.find((player) => player.id === parsed.data.leftPlayerId)!;

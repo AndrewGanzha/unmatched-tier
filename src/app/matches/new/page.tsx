@@ -2,6 +2,12 @@ import { createMatch1v1Action } from "@/modules/matches/server/create-match-1v1-
 import { getCurrentUser } from "@/modules/auth/server/session";
 import { getPlayers } from "@/modules/players/server/get-players";
 
+const errorMessages: Record<string, string> = {
+  invalid_match_payload: "Проверь состав матча и попробуй снова.",
+  duplicate_players: "Нельзя выбрать одного и того же игрока в обе стороны.",
+  players_not_available: "Один или оба выбранных игрока недоступны для матча.",
+};
+
 type NewMatchPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -25,7 +31,9 @@ export default async function NewMatchPage({ searchParams }: NewMatchPageProps) 
 
       <section className="section">
         <h2 className="section-title">Собрать матч</h2>
-        {error ? <p className="status-note">Не удалось создать матч: {String(error)}.</p> : null}
+        {error ? (
+          <p className="status-note">Не удалось создать матч: {errorMessages[String(error)] ?? String(error)}.</p>
+        ) : null}
         {currentUser?.role !== "ADMIN" ? (
           <article className="card">
             <h3>Нужен доступ администратора</h3>

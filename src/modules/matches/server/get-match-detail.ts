@@ -64,12 +64,15 @@ export async function getMatchDetail(matchId: string) {
               name: player.heroPick.hero.name,
               tier: player.heroPick.hero.tier,
               powerScore: player.heroPick.hero.powerScore,
+              imagePath: player.heroPick.hero.imagePath,
             }
           : null,
       })),
     })),
     canAssignHeroes:
-      match.status === "DRAFT" && match.sides.every((side) => side.players.length > 0),
+      match.status === "DRAFT" &&
+      match.sides.every((side) => side.players.length > 0) &&
+      match.sides.flatMap((side) => side.players).every((player) => !player.heroPick),
     canMarkReady:
       match.status === "DRAFT" &&
       match.sides.every((side) => side.players.length > 0) &&

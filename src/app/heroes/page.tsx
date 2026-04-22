@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getHeroesCatalog } from "@/modules/heroes/server/get-heroes-catalog";
 import { getCurrentUser } from "@/modules/auth/server/session";
 import { createHeroAction } from "@/modules/heroes/server/create-hero-action";
@@ -94,12 +95,12 @@ export default async function HeroesPage({ searchParams }: HeroesPageProps) {
             </article>
           ) : (
             heroes.map((hero) => (
-              <article className="card" key={hero.id}>
-                {hero.imagePath ? (
-                  <img className="hero-image" src={hero.imagePath} alt={hero.name} />
-                ) : (
-                  <div className="hero-image hero-image-empty">No image</div>
-                )}
+                <article className="card" key={hero.id}>
+                  {hero.imagePath ? (
+                    <Image className="hero-image" src={hero.imagePath} alt={hero.name} width={320} height={240} />
+                  ) : (
+                    <div className="hero-image hero-image-empty">No image</div>
+                  )}
                 <h3>{hero.name}</h3>
                 <p>
                   Tier: <strong>{hero.tier}</strong>

@@ -56,6 +56,10 @@ export async function assignHeroesAction(formData: FormData) {
     redirect(`/matches/${match.id}?error=incomplete_match_sides`);
   }
 
+  if (match.sides.some((side) => side.players.some((player) => Boolean(player.heroPick)))) {
+    redirect(`/matches/${match.id}?error=heroes_already_assigned`);
+  }
+
   const sideRatings = match.sides.map((side) => ({
     sideId: side.id,
     rating: side.seedRating,

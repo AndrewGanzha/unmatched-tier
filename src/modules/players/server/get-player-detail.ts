@@ -76,6 +76,7 @@ export async function getPlayerDetail(playerId: string) {
           ? {
               name: matchPlayer.heroPick.hero.name,
               tier: matchPlayer.heroPick.hero.tier,
+              imagePath: matchPlayer.heroPick.hero.imagePath,
             }
           : null,
       };
@@ -90,4 +91,3 @@ export async function getPlayerDetail(playerId: string) {
     })),
   };
 }
-

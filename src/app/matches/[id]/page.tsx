@@ -5,6 +5,21 @@ import { getMatchDetail } from "@/modules/matches/server/get-match-detail";
 import { markMatchReadyAction } from "@/modules/matches/server/mark-match-ready-action";
 import { recordMatchResultAction } from "@/modules/matches/server/record-match-result-action";
 
+const matchErrorMessages: Record<string, string> = {
+  match_not_draft: "Матч уже вышел из черновика. Автоназначение героев больше недоступно.",
+  incomplete_match_sides: "Матч заполнен не полностью. Сначала проверь состав сторон.",
+  rule_config_not_found: "Для такой разницы рейтинга не найдено активное правило назначения героев.",
+  heroes_pool_empty: "Для одной из сторон не нашлось доступных героев по текущим правилам.",
+  heroes_already_assigned: "Герои уже назначены. Повторное автоназначение заблокировано.",
+  heroes_not_assigned: "Сначала назначь героев всем игрокам.",
+  invalid_ready_payload: "Не удалось перевести матч в READY из-за некорректных данных формы.",
+  invalid_result_payload: "Не удалось записать результат из-за некорректных данных формы.",
+  match_not_ready: "Результат можно записать только для матча в статусе READY.",
+  result_already_recorded: "Результат этого матча уже записан.",
+  unsupported_match_shape: "Этот матч имеет неподдерживаемую структуру сторон.",
+  winning_side_invalid: "Выбранная победившая сторона не принадлежит этому матчу.",
+};
+
 type MatchDetailsPageProps = {
   params: Promise<{
     id: string;
@@ -45,7 +60,9 @@ export default async function MatchDetailsPage({ params, searchParams }: MatchDe
         {assigned ? <p className="status-note">Герои успешно назначены автоматически.</p> : null}
         {ready ? <p className="status-note">Матч переведен в статус READY.</p> : null}
         {rated ? <p className="status-note">Результат зафиксирован, рейтинг пересчитан.</p> : null}
-        {error ? <p className="status-note">Операция не выполнена: {String(error)}.</p> : null}
+        {error ? (
+          <p className="status-note">Операция не выполнена: {matchErrorMessages[String(error)] ?? String(error)}.</p>
+        ) : null}
         <div className="hero-actions">
           {currentUser?.role === "ADMIN" && match.canAssignHeroes ? (
             <form action={assignHeroesAction}>

@@ -52,10 +52,10 @@ export async function getMatchHistory(limit = 50) {
           ? {
               name: player.heroPick.hero.name,
               tier: player.heroPick.hero.tier,
+              imagePath: player.heroPick.hero.imagePath,
             }
           : null,
       })),
     })),
   }));
 }
-
