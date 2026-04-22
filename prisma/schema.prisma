@@ -1,0 +1,338 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum UserRole {
+  ADMIN
+  PLAYER
+}
+
+enum MatchMode {
+  ONE_VS_ONE
+  TWO_VS_TWO
+}
+
+enum MatchStatus {
+  DRAFT
+  READY
+  FINISHED
+  RATED
+  CANCELLED
+}
+
+enum TournamentFormat {
+  SINGLE_ELIMINATION
+}
+
+enum TournamentStatus {
+  DRAFT
+  ACTIVE
+  FINISHED
+  CANCELLED
+}
+
+enum TournamentParticipantType {
+  PLAYER
+  TEAM
+}
+
+enum AssignmentSource {
+  AUTO
+  MANUAL
+}
+
+model User {
+  id                 String        @id @default(uuid())
+  email              String        @unique
+  passwordHash       String        @map("password_hash")
+  role               UserRole
+  isActive           Boolean       @default(true) @map("is_active")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  playerProfile      PlayerProfile?
+  sessions           Session[]
+  createdMatches     Match[]       @relation("MatchCreatedBy")
+  createdTournaments Tournament[]  @relation("TournamentCreatedBy")
+  recordedResults    MatchResult[] @relation("MatchResultRecordedBy")
+
+  @@map("users")
+}
+
+model Session {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  tokenHash     String   @unique @map("token_hash")
+  expiresAt     DateTime @map("expires_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  lastSeenAt    DateTime @default(now()) @map("last_seen_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "sessions_user_id_idx")
+  @@index([expiresAt], map: "sessions_expires_at_idx")
+  @@map("sessions")
+}
+
+model PlayerProfile {
+  id                           String                         @id @default(uuid())
+  userId                       String                         @unique @map("user_id")
+  displayName                  String                         @map("display_name")
+  rating                       Int                            @default(1000)
+  wins                         Int                            @default(0)
+  losses                       Int                            @default(0)
+  draws                        Int                            @default(0)
+  matchesPlayed                Int                            @default(0) @map("matches_played")
+  createdAt                    DateTime                       @default(now()) @map("created_at")
+  updatedAt                    DateTime                       @updatedAt @map("updated_at")
+  user                         User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchPlayers                 MatchPlayer[]
+  ratingEvents                 RatingEvent[]
+  tournamentParticipantPlayers TournamentParticipantPlayer[]
+
+  @@map("player_profiles")
+}
+
+model Hero {
+  id         String     @id @default(uuid())
+  slug       String     @unique
+  name       String
+  tier       String
+  powerScore Int        @map("power_score")
+  imagePath  String?    @map("image_path")
+  isActive   Boolean    @default(true) @map("is_active")
+  metadata   String     @default("{}")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  heroPicks  HeroPick[]
+
+  @@index([isActive], map: "heroes_is_active_idx")
+  @@index([tier], map: "heroes_tier_idx")
+  @@index([powerScore], map: "heroes_power_score_idx")
+  @@map("heroes")
+}
+
+model Match {
+  id              String           @id @default(uuid())
+  mode            MatchMode
+  status          MatchStatus
+  createdByUserId String           @map("created_by_user_id")
+  startedAt       DateTime?        @map("started_at")
+  finishedAt      DateTime?        @map("finished_at")
+  tournamentId    String?          @map("tournament_id")
+  notes           String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  createdByUser   User             @relation("MatchCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  tournament      Tournament?      @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  sides           MatchSide[]
+  result          MatchResult?
+  ratingEvents    RatingEvent[]
+  tournamentMatch TournamentMatch?
+
+  @@index([mode], map: "matches_mode_idx")
+  @@index([status], map: "matches_status_idx")
+  @@index([tournamentId], map: "matches_tournament_id_idx")
+  @@map("matches")
+}
+
+model MatchSide {
+  id             String        @id @default(uuid())
+  matchId        String        @map("match_id")
+  sideIndex      Int           @map("side_index")
+  name           String?
+  seedRating     Int           @map("seed_rating")
+  isWinner       Boolean       @default(false) @map("is_winner")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  match          Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  players        MatchPlayer[]
+  winningResults MatchResult[] @relation("WinningSide")
+
+  @@unique([matchId, sideIndex], map: "match_sides_match_id_side_index_key")
+  @@index([matchId], map: "match_sides_match_id_idx")
+  @@map("match_sides")
+}
+
+model MatchPlayer {
+  id              String        @id @default(uuid())
+  matchSideId     String        @map("match_side_id")
+  playerProfileId String        @map("player_profile_id")
+  slotIndex       Int           @map("slot_index")
+  ratingBefore    Int           @map("rating_before")
+  ratingAfter     Int?          @map("rating_after")
+  ratingDelta     Int?          @map("rating_delta")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  matchSide       MatchSide     @relation(fields: [matchSideId], references: [id], onDelete: Cascade)
+  playerProfile   PlayerProfile @relation(fields: [playerProfileId], references: [id], onDelete: Restrict)
+  heroPick        HeroPick?
+
+  @@unique([matchSideId, slotIndex], map: "match_players_match_side_id_slot_index_key")
+  @@unique([matchSideId, playerProfileId], map: "match_players_side_player_key")
+  @@index([playerProfileId], map: "match_players_player_profile_id_idx")
+  @@map("match_players")
+}
+
+model HeroPick {
+  id                     String           @id @default(uuid())
+  matchPlayerId          String           @unique @map("match_player_id")
+  heroId                 String           @map("hero_id")
+  assignedByRuleConfigId String?          @map("assigned_by_rule_config_id")
+  assignmentSource       AssignmentSource @default(AUTO) @map("assignment_source")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  matchPlayer            MatchPlayer      @relation(fields: [matchPlayerId], references: [id], onDelete: Cascade)
+  hero                   Hero             @relation(fields: [heroId], references: [id], onDelete: Restrict)
+  assignedByRuleConfig   RuleConfig?      @relation(fields: [assignedByRuleConfigId], references: [id], onDelete: SetNull)
+
+  @@index([heroId], map: "hero_picks_hero_id_idx")
+  @@index([assignedByRuleConfigId], map: "hero_picks_rule_config_id_idx")
+  @@map("hero_picks")
+}
+
+model MatchResult {
+  id               String    @id @default(uuid())
+  matchId          String    @unique @map("match_id")
+  winningSideId    String    @map("winning_side_id")
+  recordedByUserId String    @map("recorded_by_user_id")
+  recordedAt       DateTime  @default(now()) @map("recorded_at")
+  payload          String    @default("{}")
+  match            Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  winningSide      MatchSide @relation("WinningSide", fields: [winningSideId], references: [id], onDelete: Restrict)
+  recordedByUser   User      @relation("MatchResultRecordedBy", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([winningSideId], map: "match_results_winning_side_id_idx")
+  @@index([recordedByUserId], map: "match_results_recorded_by_user_id_idx")
+  @@map("match_results")
+}
+
+model RatingEvent {
+  id              String        @id @default(uuid())
+  playerProfileId String        @map("player_profile_id")
+  matchId         String        @map("match_id")
+  ratingBefore    Int           @map("rating_before")
+  ratingAfter     Int           @map("rating_after")
+  delta           Int
+  kFactor         Int           @map("k_factor")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  playerProfile   PlayerProfile @relation(fields: [playerProfileId], references: [id], onDelete: Restrict)
+  match           Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([playerProfileId], map: "rating_events_player_profile_id_idx")
+  @@index([matchId], map: "rating_events_match_id_idx")
+  @@unique([playerProfileId, matchId], map: "rating_events_player_match_key")
+  @@map("rating_events")
+}
+
+model Tournament {
+  id                  String                 @id @default(uuid())
+  name                String
+  mode                MatchMode
+  format              TournamentFormat
+  status              TournamentStatus
+  createdByUserId     String                 @map("created_by_user_id")
+  startedAt           DateTime?              @map("started_at")
+  finishedAt          DateTime?              @map("finished_at")
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @updatedAt @map("updated_at")
+  createdByUser       User                   @relation("TournamentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  matches             Match[]
+  participants        TournamentParticipant[]
+  rounds              TournamentRound[]
+  tournamentMatches   TournamentMatch[]
+
+  @@index([status], map: "tournaments_status_idx")
+  @@index([mode], map: "tournaments_mode_idx")
+  @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id                           String                         @id @default(uuid())
+  tournamentId                 String                         @map("tournament_id")
+  participantType              TournamentParticipantType      @map("participant_type")
+  seed                         Int
+  displayName                  String                         @map("display_name")
+  seedRating                   Int                            @map("seed_rating")
+  createdAt                    DateTime                       @default(now()) @map("created_at")
+  tournament                    Tournament                     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  players                      TournamentParticipantPlayer[]
+  sourceLeftTournamentMatches  TournamentMatch[]             @relation("SourceLeftParticipant")
+  sourceRightTournamentMatches TournamentMatch[]             @relation("SourceRightParticipant")
+  wonTournamentMatches         TournamentMatch[]             @relation("WinnerParticipant")
+
+  @@unique([tournamentId, seed], map: "tournament_participants_tournament_seed_key")
+  @@index([tournamentId], map: "tournament_participants_tournament_id_idx")
+  @@map("tournament_participants")
+}
+
+model TournamentParticipantPlayer {
+  id                      String                @id @default(uuid())
+  tournamentParticipantId String                @map("tournament_participant_id")
+  playerProfileId         String                @map("player_profile_id")
+  slotIndex               Int                   @map("slot_index")
+  tournamentParticipant   TournamentParticipant @relation(fields: [tournamentParticipantId], references: [id], onDelete: Cascade)
+  playerProfile           PlayerProfile         @relation(fields: [playerProfileId], references: [id], onDelete: Restrict)
+
+  @@unique([tournamentParticipantId, slotIndex], map: "tournament_participant_players_slot_key")
+  @@unique([tournamentParticipantId, playerProfileId], map: "tournament_participant_players_member_key")
+  @@index([playerProfileId], map: "tournament_participant_players_player_profile_id_idx")
+  @@map("tournament_participant_players")
+}
+
+model TournamentRound {
+  id               String            @id @default(uuid())
+  tournamentId     String            @map("tournament_id")
+  roundIndex       Int               @map("round_index")
+  name             String
+  createdAt        DateTime          @default(now()) @map("created_at")
+  tournament       Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentMatches TournamentMatch[]
+
+  @@unique([tournamentId, roundIndex], map: "tournament_rounds_tournament_round_key")
+  @@index([tournamentId], map: "tournament_rounds_tournament_id_idx")
+  @@map("tournament_rounds")
+}
+
+model TournamentMatch {
+  id                       String                 @id @default(uuid())
+  tournamentId             String                 @map("tournament_id")
+  tournamentRoundId        String                 @map("tournament_round_id")
+  matchId                  String                 @unique @map("match_id")
+  bracketPosition          Int                    @map("bracket_position")
+  sourceLeftParticipantId  String?                @map("source_left_participant_id")
+  sourceRightParticipantId String?                @map("source_right_participant_id")
+  winnerParticipantId      String?                @map("winner_participant_id")
+  tournament               Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentRound          TournamentRound        @relation(fields: [tournamentRoundId], references: [id], onDelete: Cascade)
+  match                    Match                  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sourceLeftParticipant    TournamentParticipant? @relation("SourceLeftParticipant", fields: [sourceLeftParticipantId], references: [id], onDelete: SetNull)
+  sourceRightParticipant   TournamentParticipant? @relation("SourceRightParticipant", fields: [sourceRightParticipantId], references: [id], onDelete: SetNull)
+  winnerParticipant        TournamentParticipant? @relation("WinnerParticipant", fields: [winnerParticipantId], references: [id], onDelete: SetNull)
+
+  @@unique([tournamentRoundId, bracketPosition], map: "tournament_matches_round_bracket_key")
+  @@index([tournamentId], map: "tournament_matches_tournament_id_idx")
+  @@index([sourceLeftParticipantId], map: "tournament_matches_source_left_idx")
+  @@index([sourceRightParticipantId], map: "tournament_matches_source_right_idx")
+  @@index([winnerParticipantId], map: "tournament_matches_winner_idx")
+  @@map("tournament_matches")
+}
+
+model RuleConfig {
+  id                String     @id @default(uuid())
+  mode              MatchMode
+  ratingDiffMin     Int        @map("rating_diff_min")
+  ratingDiffMax     Int        @map("rating_diff_max")
+  strongerMinPower  Int        @map("stronger_min_power")
+  strongerMaxPower  Int        @map("stronger_max_power")
+  weakerMinPower    Int        @map("weaker_min_power")
+  weakerMaxPower    Int        @map("weaker_max_power")
+  isActive          Boolean    @default(true) @map("is_active")
+  priority          Int        @default(0)
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+  heroPicks         HeroPick[]
+
+  @@index([mode, isActive, priority], map: "rule_configs_mode_active_priority_idx")
+  @@index([mode, ratingDiffMin, ratingDiffMax], map: "rule_configs_mode_diff_idx")
+  @@map("rule_configs")
+}
