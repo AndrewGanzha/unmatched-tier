@@ -1,3 +1,4 @@
+﻿import Link from "next/link";
 import { getMatchHistory } from "@/modules/matches/server/get-match-history";
 
 export default async function MatchHistoryPage() {
@@ -7,11 +8,7 @@ export default async function MatchHistoryPage() {
     <main>
       <section className="hero">
         <span className="eyebrow">Match History</span>
-        <h1>История матчей и текущий журнал результатов.</h1>
-        <p>
-          Здесь виден весь путь матча: участники, назначенные герои, статус и итоговые изменения
-          рейтинга после фиксации результата.
-        </p>
+        <h1>Журнал сыгранных матчей.</h1>
       </section>
 
       <section className="section">
@@ -20,7 +17,7 @@ export default async function MatchHistoryPage() {
           {matches.length === 0 ? (
             <article className="card">
               <h3>Матчей пока нет</h3>
-              <p>После первого созданного матча здесь появится полная история.</p>
+              <p>После первого сохранённого результата здесь появится история матчей.</p>
             </article>
           ) : (
             matches.map((match) => (
@@ -31,7 +28,7 @@ export default async function MatchHistoryPage() {
                   <span>{new Date(match.createdAt).toLocaleString("ru-RU")}</span>
                 </div>
                 <h3>
-                  <a href={`/matches/${match.id}`}>Матч {match.id}</a>
+                  <Link href={`/matches/${match.id}`}>Матч {match.id}</Link>
                 </h3>
                 <ul>
                   {match.sides.map((side) => (
@@ -58,4 +55,3 @@ export default async function MatchHistoryPage() {
     </main>
   );
 }
-

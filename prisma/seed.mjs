@@ -1,7 +1,9 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { MatchMode, PrismaClient, UserRole } from "@prisma/client";
+import prismaClient from "@prisma/client";
+
+const { MatchMode, PrismaClient, UserRole } = prismaClient;
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -97,15 +99,9 @@ const defaultRuleConfigs = [
     weakerMaxPower: 100,
     priority: 10,
   },
-] as const;
+];
 
-const defaultHeroes: Array<{
-  slug: string;
-  name: string;
-  tier: "S" | "A" | "B" | "C" | "D";
-  combatType: "MELEE" | "RANGED";
-  powerScore: number;
-}> = [
+const defaultHeroes = [
   { slug: "medusa", name: "Medusa", tier: "S", combatType: "RANGED", powerScore: 96 },
   { slug: "little-red", name: "Little Red Riding Hood", tier: "S", combatType: "RANGED", powerScore: 94 },
   { slug: "sun-wukong", name: "Sun Wukong", tier: "S", combatType: "MELEE", powerScore: 92 },
@@ -261,10 +257,6 @@ async function main() {
   const ruleCount = await prisma.ruleConfig.count();
 
   console.log(`Seed completed. Heroes: ${heroCount}. Rule configs: ${ruleCount}.`);
-
-  if (heroCount === 0) {
-    console.log("Hero seed list is empty. Add real Unmatched heroes to prisma/seed.ts before first full use.");
-  }
 }
 
 main()

@@ -1,4 +1,4 @@
-import { getLeaderboard } from "@/modules/leaderboard/server/get-leaderboard";
+﻿import { getLeaderboard } from "@/modules/leaderboard/server/get-leaderboard";
 
 export default async function LeaderboardPage() {
   const leaderboard = await getLeaderboard();
@@ -7,18 +7,14 @@ export default async function LeaderboardPage() {
     <main>
       <section className="hero">
         <span className="eyebrow">Leaderboard</span>
-        <h1>Общий рейтинг игроков Unmatched.</h1>
-        <p>
-          Это первая server-side версия таблицы лидеров поверх Prisma. Позже сюда добавятся
-          фильтры, динамика рейтинга и подробная история матчей.
-        </p>
+        <h1>Текущий рейтинг игроков.</h1>
       </section>
 
       <section className="section">
         <h2 className="section-title">Текущий топ</h2>
         <div className="table-card">
           {leaderboard.length === 0 ? (
-            <p className="empty-state">Пока нет игроков. Seed admin уже может создать первую запись.</p>
+            <p className="empty-state">Пока нет игроков. Создай первого пользователя в разделе Players или через seed.</p>
           ) : (
             <table className="table">
               <thead>

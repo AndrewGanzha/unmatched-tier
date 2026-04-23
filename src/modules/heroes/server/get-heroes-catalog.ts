@@ -10,6 +10,7 @@ export async function getHeroesCatalog() {
     slug: hero.slug,
     name: hero.name,
     tier: hero.tier,
+    combatType: hero.combatType,
     powerScore: hero.powerScore,
     imagePath: hero.imagePath,
     isActive: hero.isActive,

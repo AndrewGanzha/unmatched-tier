@@ -1,24 +1,18 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { getDashboardSummary } from "@/modules/dashboard/server/get-dashboard-summary";
-
-const buildSteps = [
-  "Настроить Prisma client и первую миграцию SQLite.",
-  "Добавить auth-flow и роли admin/player.",
-  "Собрать вертикальный срез матча 1v1 с автоназначением героев.",
-];
 
 const firstModules = [
   {
     title: "Players",
-    description: "Профили игроков, общий рейтинг, история матчей и рейтинг-событий.",
+    description: "Игроки, рейтинги и краткая история матчей.",
   },
   {
     title: "Heroes",
-    description: "Каталог персонажей с tier, power_score и флагами доступности.",
+    description: "Каталог персонажей с tier, типом боя и power score.",
   },
   {
     title: "Matches",
-    description: "Матчи 1v1 и 2v2, стороны, участники, результаты и фиксация победителя.",
+    description: "Матчи, стороны, результаты и фиксация победителя.",
   },
 ];
 
@@ -29,12 +23,7 @@ export default async function HomePage() {
     <main>
       <section className="hero">
         <span className="eyebrow">Operations Dashboard</span>
-        <h1>Рейтинговая панель для матчей, игроков и турниров Unmatched.</h1>
-        <p>
-          Интерфейс переведен в более соревновательный dashboard-стиль: темная операционная
-          панель, быстрые действия, рейтинг, история матчей и рабочие админские сценарии в
-          одном приложении.
-        </p>
+        <h1>Панель управления матчами, игроками и каталогом Unmatched.</h1>
         <div className="hero-actions">
           <Link className="button primary" href="/matches/new">
             Create 1v1 Match
@@ -49,22 +38,12 @@ export default async function HomePage() {
       </section>
 
       <section className="section">
-        <h2 className="section-title">Quick Actions</h2>
-        <div className="grid">
-          {buildSteps.map((step, index) => (
-            <article className="action-card" key={step}>
-              <div className="action-icon">{index + 1}</div>
-              <div>
-                <h3>Action {index + 1}</h3>
-                <p>{step}</p>
-              </div>
-            </article>
-          ))}
+        <div className="section-header">
+          <h2 className="section-title">System State</h2>
+          <Link className="section-link" href="/matches/new">
+            Быстро создать матч
+          </Link>
         </div>
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">System State</h2>
         <div className="stats-grid">
           <article className="stat-card">
             <span className="stat-label">PLAYERS</span>
@@ -90,7 +69,6 @@ export default async function HomePage() {
       </section>
 
       <section className="section">
-        <h2 className="section-title">Modules</h2>
         <div className="grid">
           {firstModules.map((module) => (
             <article className="card" key={module.title}>
@@ -105,15 +83,15 @@ export default async function HomePage() {
       <section className="section">
         <div className="section-header">
           <h2 className="section-title">Recent Activity</h2>
-          <a className="section-link" href="/history/matches">
+          <Link className="section-link" href="/history/matches">
             View all matches
-          </a>
+          </Link>
         </div>
         <div className="grid">
           {summary.latestMatches.length === 0 ? (
             <article className="card">
               <h3>No Recent Matches</h3>
-              <p>После первого завершенного матча здесь появится оперативная лента встреч.</p>
+              <p>После первого завершённого матча здесь появится оперативная лента встреч.</p>
             </article>
           ) : (
             summary.latestMatches.map((match) => (

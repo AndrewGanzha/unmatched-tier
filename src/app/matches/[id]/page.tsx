@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+﻿import { notFound } from "next/navigation";
 import { assignHeroesAction } from "@/modules/matches/server/assign-heroes-action";
 import { getCurrentUser } from "@/modules/auth/server/session";
 import { getMatchDetail } from "@/modules/matches/server/get-match-detail";
@@ -6,11 +6,13 @@ import { markMatchReadyAction } from "@/modules/matches/server/mark-match-ready-
 import { recordMatchResultAction } from "@/modules/matches/server/record-match-result-action";
 
 const matchErrorMessages: Record<string, string> = {
+  match_not_found: "Матч не найден.",
   match_not_draft: "Матч уже вышел из черновика. Автоназначение героев больше недоступно.",
   incomplete_match_sides: "Матч заполнен не полностью. Сначала проверь состав сторон.",
   rule_config_not_found: "Для такой разницы рейтинга не найдено активное правило назначения героев.",
   heroes_pool_empty: "Для одной из сторон не нашлось доступных героев по текущим правилам.",
   heroes_already_assigned: "Герои уже назначены. Повторное автоназначение заблокировано.",
+  invalid_assign_payload: "Не удалось назначить героев из-за некорректных данных формы.",
   heroes_not_assigned: "Сначала назначь героев всем игрокам.",
   invalid_ready_payload: "Не удалось перевести матч в READY из-за некорректных данных формы.",
   invalid_result_payload: "Не удалось записать результат из-за некорректных данных формы.",
@@ -42,6 +44,16 @@ export default async function MatchDetailsPage({ params, searchParams }: MatchDe
     notFound();
   }
 
+  const nextStepMessage = match.canRecordResult
+    ? "Следующий шаг: выбрать победившую сторону и зафиксировать результат."
+    : match.canMarkReady
+      ? "Следующий шаг: перевести матч в READY после проверки назначенных героев."
+      : match.canAssignHeroes
+        ? "Следующий шаг: автоматически назначить героев по текущим правилам."
+        : match.status === "RATED"
+          ? "Матч завершён. Рейтинг уже пересчитан и сохранён в истории."
+          : "Проверь текущий статус матча и состав сторон.";
+
   return (
     <main>
       <section className="hero">
@@ -49,20 +61,15 @@ export default async function MatchDetailsPage({ params, searchParams }: MatchDe
         <h1>
           Матч {match.mode} в статусе {match.status}.
         </h1>
-        <p>
-          Это серверная карточка матча. Следующий шаг после нее: автоназначение героев,
-          перевод в <code>READY</code> и фиксация результата.
-        </p>
       </section>
 
       <section className="section">
         {created ? <p className="status-note">Матч успешно создан.</p> : null}
         {assigned ? <p className="status-note">Герои успешно назначены автоматически.</p> : null}
-        {ready ? <p className="status-note">Матч переведен в статус READY.</p> : null}
+        {ready ? <p className="status-note">Матч переведён в статус READY.</p> : null}
         {rated ? <p className="status-note">Результат зафиксирован, рейтинг пересчитан.</p> : null}
-        {error ? (
-          <p className="status-note">Операция не выполнена: {matchErrorMessages[String(error)] ?? String(error)}.</p>
-        ) : null}
+        {error ? <p className="status-note">Операция не выполнена: {matchErrorMessages[String(error)] ?? String(error)}.</p> : null}
+        <p className="status-note">{nextStepMessage}</p>
         <div className="hero-actions">
           {currentUser?.role === "ADMIN" && match.canAssignHeroes ? (
             <form action={assignHeroesAction}>

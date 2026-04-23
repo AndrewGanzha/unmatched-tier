@@ -150,10 +150,10 @@ main {
 
 .hero {
   display: grid;
-  gap: 24px;
-  padding: 32px;
+  gap: 14px;
+  padding: 20px 24px;
   border: 1px solid var(--panel-border);
-  border-radius: 18px;
+  border-radius: 16px;
   background:
     linear-gradient(180deg, rgba(255, 107, 0, 0.08), transparent 42%),
     linear-gradient(145deg, #171a1d, #13161a);
@@ -175,17 +175,17 @@ main {
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(2.2rem, 6vw, 4.75rem);
-  line-height: 0.98;
-  max-width: 11ch;
-  letter-spacing: -0.04em;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1.05;
+  max-width: 18ch;
+  letter-spacing: -0.03em;
 }
 
 .hero p {
   margin: 0;
   max-width: 60ch;
-  font-size: 1.05rem;
-  line-height: 1.7;
+  font-size: 0.96rem;
+  line-height: 1.55;
   color: var(--muted);
 }
 
@@ -350,6 +350,18 @@ main {
   background: rgba(255, 255, 255, 0.04);
   color: var(--foreground);
   font: inherit;
+}
+
+.select option {
+  color: #0f1113;
+  background: #ffffff;
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .status-note {

@@ -1,4 +1,4 @@
-import { loginAction } from "@/modules/auth/server/login-action";
+﻿import { loginAction } from "@/modules/auth/server/login-action";
 import { getCurrentUser } from "@/modules/auth/server/session";
 
 type LoginPageProps = {
@@ -15,10 +15,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <main>
       <section className="hero">
         <span className="eyebrow">Login</span>
-        <h1>Вход в административную панель Unmatched Tier.</h1>
-        <p>
-          Write-операции теперь доступны только пользователю с ролью <code>ADMIN</code>.
-        </p>
+        <h1>Вход в административную панель.</h1>
       </section>
 
       <section className="section">

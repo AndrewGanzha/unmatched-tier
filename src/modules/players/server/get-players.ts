@@ -11,6 +11,7 @@ export async function getPlayers() {
     displayName: player.displayName,
     email: player.user.email,
     role: player.user.role,
+    isActive: player.user.isActive,
     rating: player.rating,
     wins: player.wins,
     losses: player.losses,

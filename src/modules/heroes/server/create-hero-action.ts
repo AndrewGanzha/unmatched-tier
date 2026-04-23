@@ -16,7 +16,8 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "i
 const createHeroSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z.string().trim().min(2).max(120),
-  tier: z.string().trim().min(1).max(16),
+  tier: z.enum(["S", "A", "B", "C", "D"]),
+  combatType: z.enum(["MELEE", "RANGED"]),
   powerScore: z.coerce.number().int().min(1).max(10000),
   isActive: z.union([z.literal("on"), z.literal("true"), z.literal("false"), z.undefined()]).optional(),
 });
@@ -78,6 +79,7 @@ export async function createHeroAction(formData: FormData) {
     name: formData.get("name"),
     slug: formData.get("slug"),
     tier: formData.get("tier"),
+    combatType: formData.get("combatType"),
     powerScore: formData.get("powerScore"),
     isActive: formData.get("isActive"),
   });
@@ -100,7 +102,8 @@ export async function createHeroAction(formData: FormData) {
       data: {
         name: parsed.data.name,
         slug,
-        tier: parsed.data.tier.toUpperCase(),
+        tier: parsed.data.tier,
+        combatType: parsed.data.combatType,
         powerScore: parsed.data.powerScore,
         imagePath,
         isActive: parsed.data.isActive !== "false",
@@ -118,4 +121,3 @@ export async function createHeroAction(formData: FormData) {
   revalidatePath("/");
   redirect("/heroes?created=1");
 }
-

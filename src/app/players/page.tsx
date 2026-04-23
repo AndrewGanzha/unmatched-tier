@@ -1,6 +1,14 @@
+﻿import Link from "next/link";
 import { createPlayerAction } from "@/modules/players/server/create-player-action";
 import { getCurrentUser } from "@/modules/auth/server/session";
 import { getPlayers } from "@/modules/players/server/get-players";
+
+const playerErrorMessages: Record<string, string> = {
+  invalid_player_payload: "Проверь поля формы и попробуй снова.",
+  email_exists: "Пользователь с таким email уже существует.",
+  invalid_rating_payload: "Не удалось обновить рейтинг из-за некорректных данных.",
+  player_not_found: "Игрок не найден.",
+};
 
 type PlayersPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -17,17 +25,13 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
     <main>
       <section className="hero">
         <span className="eyebrow">Players</span>
-        <h1>Игроки, которые участвуют в рейтинговых матчах и турнирах.</h1>
-        <p>
-          Уже доступен первый write-flow: создается учетная запись пользователя и связанный
-          игровой профиль с общим рейтингом.
-        </p>
+        <h1>Игроки рейтинговой системы.</h1>
       </section>
 
       <section className="section">
         <h2 className="section-title">Создать игрока</h2>
         {created ? <p className="status-note">Игрок успешно создан.</p> : null}
-        {error ? <p className="status-note">Не удалось создать игрока: {String(error)}.</p> : null}
+        {error ? <p className="status-note">Операция не выполнена: {playerErrorMessages[String(error)] ?? String(error)}.</p> : null}
         {currentUser?.role === "ADMIN" ? (
           <form action={createPlayerAction} className="form-card">
             <div className="form-grid">
@@ -89,7 +93,7 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
                   <span>{player.email}</span>
                 </div>
                 <h3>
-                  <a href={`/players/${player.id}`}>{player.displayName}</a>
+                  <Link href={`/players/${player.id}`}>{player.displayName}</Link>
                 </h3>
                 <p>
                   Рейтинг: <strong>{player.rating}</strong>
