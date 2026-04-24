@@ -1,4 +1,6 @@
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
 import bcrypt from "bcryptjs";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { MatchMode, PrismaClient, UserRole } from "@prisma/client";
@@ -99,13 +101,16 @@ const defaultRuleConfigs = [
   },
 ] as const;
 
-const defaultHeroes: Array<{
+type SeedHero = {
   slug: string;
   name: string;
   tier: "S" | "A" | "B" | "C" | "D";
   combatType: "MELEE" | "RANGED";
   powerScore: number;
-}> = [
+  imagePath: string;
+};
+
+const heroSeedDefaults: Array<Omit<SeedHero, "imagePath">> = [
   { slug: "medusa", name: "Medusa", tier: "S", combatType: "RANGED", powerScore: 96 },
   { slug: "little-red", name: "Little Red Riding Hood", tier: "S", combatType: "RANGED", powerScore: 94 },
   { slug: "sun-wukong", name: "Sun Wukong", tier: "S", combatType: "MELEE", powerScore: 92 },
@@ -123,6 +128,71 @@ const defaultHeroes: Array<{
   { slug: "jekyll-hyde", name: "Dr. Jekyll & Mr. Hyde", tier: "D", combatType: "MELEE", powerScore: 46 },
   { slug: "invisible-man", name: "Invisible Man", tier: "D", combatType: "MELEE", powerScore: 42 },
 ];
+
+const heroSlugAliases = new Map<string, string>([
+  ["king-arthur", "arthur"],
+  ["jekyll-and-hyde", "jekyll-hyde"],
+  ["sinbad", "sinbad"],
+  ["sindbad", "sinbad"],
+  ["yennega", "yennenga"],
+  ["yennenga", "yennenga"],
+  ["bloody-mary", "bloody-mary"],
+  ["blood-mary", "bloody-mary"],
+]);
+
+const heroDefaultsBySlug = new Map(heroSeedDefaults.map((hero) => [hero.slug, hero]));
+
+function normalizeHeroSlug(rawSlug: string) {
+  const normalized = rawSlug
+    .trim()
+    .toLowerCase()
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/^\d+-/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return heroSlugAliases.get(normalized) ?? normalized;
+}
+
+function toTitleCase(value: string) {
+  return value
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function extractHeroImageFiles() {
+  const heroesDir = path.join(process.cwd(), "public", "uploads", "heroes");
+
+  if (!fs.existsSync(heroesDir)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(heroesDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /^\d+-.*\.(png|jpe?g|webp)$/i.test(entry.name))
+    .map((entry) => entry.name);
+}
+
+function buildSeedHeroes(): SeedHero[] {
+  return extractHeroImageFiles()
+    .map((fileName) => {
+      const derivedSlug = normalizeHeroSlug(fileName);
+
+      const baseHero = heroDefaultsBySlug.get(derivedSlug);
+
+      return {
+        slug: derivedSlug,
+        name: baseHero?.name ?? toTitleCase(derivedSlug),
+        tier: baseHero?.tier ?? "C",
+        combatType: baseHero?.combatType ?? "MELEE",
+        powerScore: baseHero?.powerScore ?? 50,
+        imagePath: `/uploads/heroes/${fileName}`,
+      } satisfies SeedHero;
+    })
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
 
 async function seedAdminUser() {
   const email = process.env.SEED_ADMIN_EMAIL?.trim();
@@ -188,7 +258,9 @@ async function seedAdminUser() {
 }
 
 async function seedHeroes() {
-  for (const hero of defaultHeroes) {
+  const heroes = buildSeedHeroes();
+
+  for (const hero of heroes) {
     await prisma.hero.upsert({
       where: { slug: hero.slug },
       update: {
@@ -196,6 +268,7 @@ async function seedHeroes() {
         tier: hero.tier,
         combatType: hero.combatType,
         powerScore: hero.powerScore,
+        imagePath: hero.imagePath,
         isActive: true,
       },
       create: {
@@ -204,6 +277,7 @@ async function seedHeroes() {
         tier: hero.tier,
         combatType: hero.combatType,
         powerScore: hero.powerScore,
+        imagePath: hero.imagePath,
         isActive: true,
       },
     });
@@ -263,7 +337,7 @@ async function main() {
   console.log(`Seed completed. Heroes: ${heroCount}. Rule configs: ${ruleCount}.`);
 
   if (heroCount === 0) {
-    console.log("Hero seed list is empty. Add real Unmatched heroes to prisma/seed.ts before first full use.");
+    console.log("Hero seed list is empty. Check public/uploads/heroes before running seed.");
   }
 }
 

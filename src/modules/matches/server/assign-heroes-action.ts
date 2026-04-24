@@ -16,6 +16,28 @@ function pickRandomHeroId(heroIds: string[]) {
   return heroIds[randomIndex];
 }
 
+async function getActiveMatchHeroIds(matchId: string) {
+  const activeHeroPicks = await prisma.heroPick.findMany({
+    where: {
+      matchPlayer: {
+        matchSide: {
+          matchId: { not: matchId },
+          match: {
+            status: {
+              in: [MatchStatus.DRAFT, MatchStatus.READY],
+            },
+          },
+        },
+      },
+    },
+    select: {
+      heroId: true,
+    },
+  });
+
+  return new Set(activeHeroPicks.map((heroPick) => heroPick.heroId));
+}
+
 export async function assignHeroesAction(formData: FormData) {
   await requireAdminUser();
 
@@ -83,6 +105,7 @@ export async function assignHeroesAction(formData: FormData) {
     redirect(`/matches/${match.id}?error=rule_config_not_found`);
   }
 
+  const globallyUsedHeroIds = await getActiveMatchHeroIds(match.id);
   const usedHeroIds = new Set<string>();
   const heroAssignments: Array<{
     matchPlayerId: string;
@@ -114,6 +137,9 @@ export async function assignHeroesAction(formData: FormData) {
     const heroesPool = await prisma.hero.findMany({
       where: {
         isActive: true,
+        id: {
+          notIn: [...globallyUsedHeroIds],
+        },
         powerScore: {
           gte: minPower,
           lte: maxPower,

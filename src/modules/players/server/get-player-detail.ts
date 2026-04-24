@@ -41,7 +41,7 @@ export async function getPlayerDetail(playerId: string) {
     },
   });
 
-  if (!player) {
+  if (!player || !player.user) {
     return null;
   }
 

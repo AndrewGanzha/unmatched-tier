@@ -75,7 +75,7 @@ export async function getCurrentUser() {
     return null;
   }
 
-  if (session.expiresAt.getTime() <= Date.now() || !session.user.isActive) {
+  if (!session.user || session.expiresAt.getTime() <= Date.now() || !session.user.isActive) {
     await prisma.session.delete({
       where: { id: session.id },
     });
@@ -118,4 +118,3 @@ export async function requireAdminUser() {
 
   return user;
 }
-
