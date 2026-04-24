@@ -1,11 +1,12 @@
-﻿import { createMatch1v1Action } from "@/modules/matches/server/create-match-1v1-action";
+import { MatchMode } from "@prisma/client";
 import { getCurrentUser } from "@/modules/auth/server/session";
+import { createMatchAction } from "@/modules/matches/server/create-match-action";
 import { getPlayers } from "@/modules/players/server/get-players";
 
 const errorMessages: Record<string, string> = {
   invalid_match_payload: "Проверь состав матча и попробуй снова.",
-  duplicate_players: "Нельзя выбрать одного и того же игрока в обе стороны.",
-  players_not_available: "Один или оба выбранных игрока недоступны для матча.",
+  duplicate_players: "Нельзя выбрать одного и того же игрока дважды в одном матче.",
+  players_not_available: "Один или несколько выбранных игроков недоступны для матча.",
   match_not_found: "Матч не найден.",
   invalid_assign_payload: "Некорректные данные формы.",
 };
@@ -13,6 +14,19 @@ const errorMessages: Record<string, string> = {
 type NewMatchPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function PlayerOptions({ players }: { players: Array<{ id: string; displayName: string; rating: number }> }) {
+  return (
+    <>
+      <option value="">Выбери игрока</option>
+      {players.map((player) => (
+        <option key={player.id} value={player.id}>
+          {player.displayName} · {player.rating}
+        </option>
+      ))}
+    </>
+  );
+}
 
 export default async function NewMatchPage({ searchParams }: NewMatchPageProps) {
   const currentUser = await getCurrentUser();
@@ -25,7 +39,7 @@ export default async function NewMatchPage({ searchParams }: NewMatchPageProps) 
     <main>
       <section className="hero">
         <span className="eyebrow">New Match</span>
-        <h1>Создание черновика матча 1v1.</h1>
+        <h1>Создание черновика матча 1v1 или 2v2.</h1>
       </section>
 
       <section className="section">
@@ -42,48 +56,105 @@ export default async function NewMatchPage({ searchParams }: NewMatchPageProps) 
             <p>Для матча нужны как минимум два активных игрока со страницы Players.</p>
           </article>
         ) : (
-          <form action={createMatch1v1Action} className="form-card">
-            <div className="form-grid">
-              <div className="form-row">
-                <label className="form-label" htmlFor="leftPlayerId">
-                  Player 1
-                </label>
-                <select className="select" id="leftPlayerId" name="leftPlayerId" required defaultValue="">
-                  <option value="">Выбери игрока</option>
-                  {availablePlayers.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.displayName} · {player.rating}
-                    </option>
-                  ))}
-                </select>
+          <div className="grid">
+            <form action={createMatchAction} className="form-card">
+              <input type="hidden" name="mode" value={MatchMode.ONE_VS_ONE} />
+              <div className="form-grid">
+                <div className="form-row full">
+                  <h3>Матч 1v1</h3>
+                  <p className="field-hint">По одному игроку на сторону.</p>
+                </div>
+                <div className="form-row">
+                  <label className="form-label" htmlFor="leftPlayerId1v1">
+                    Player 1
+                  </label>
+                  <select className="select" id="leftPlayerId1v1" name="leftPlayerId" required defaultValue="">
+                    <PlayerOptions players={availablePlayers} />
+                  </select>
+                </div>
+                <div className="form-row">
+                  <label className="form-label" htmlFor="rightPlayerId1v1">
+                    Player 2
+                  </label>
+                  <select className="select" id="rightPlayerId1v1" name="rightPlayerId" required defaultValue="">
+                    <PlayerOptions players={availablePlayers} />
+                  </select>
+                </div>
+                <div className="form-row full">
+                  <label className="form-label" htmlFor="notes1v1">
+                    Notes
+                  </label>
+                  <input className="input" id="notes1v1" name="notes" placeholder="Например: вечерняя серия bo3" />
+                </div>
+                <div className="form-row full">
+                  <button className="button primary" type="submit">
+                    Создать матч 1v1
+                  </button>
+                </div>
               </div>
-              <div className="form-row">
-                <label className="form-label" htmlFor="rightPlayerId">
-                  Player 2
-                </label>
-                <select className="select" id="rightPlayerId" name="rightPlayerId" required defaultValue="">
-                  <option value="">Выбери игрока</option>
-                  {availablePlayers.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.displayName} · {player.rating}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-row full">
-                <label className="form-label" htmlFor="notes">
-                  Notes
-                </label>
-                <input className="input" id="notes" name="notes" placeholder="Например: вечерняя серия bo3" />
-                <p className="field-hint">В список попадают только активные игроки.</p>
-              </div>
-              <div className="form-row full">
-                <button className="button primary" type="submit">
-                  Создать матч 1v1
-                </button>
-              </div>
-            </div>
-          </form>
+            </form>
+
+            {availablePlayers.length < 4 ? (
+              <article className="card">
+                <h3>Матч 2v2 пока недоступен</h3>
+                <p>Для режима 2v2 нужны минимум четыре активных игрока.</p>
+              </article>
+            ) : (
+              <form action={createMatchAction} className="form-card">
+                <input type="hidden" name="mode" value={MatchMode.TWO_VS_TWO} />
+                <div className="form-grid">
+                  <div className="form-row full">
+                    <h3>Матч 2v2</h3>
+                    <p className="field-hint">По два игрока на сторону. Все четыре игрока должны быть разными.</p>
+                  </div>
+                  <div className="form-row">
+                    <label className="form-label" htmlFor="leftPlayerId2v2">
+                      Team 1 · Player 1
+                    </label>
+                    <select className="select" id="leftPlayerId2v2" name="leftPlayerId" required defaultValue="">
+                      <PlayerOptions players={availablePlayers} />
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <label className="form-label" htmlFor="leftTeammateId2v2">
+                      Team 1 · Player 2
+                    </label>
+                    <select className="select" id="leftTeammateId2v2" name="leftTeammateId" required defaultValue="">
+                      <PlayerOptions players={availablePlayers} />
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <label className="form-label" htmlFor="rightPlayerId2v2">
+                      Team 2 · Player 1
+                    </label>
+                    <select className="select" id="rightPlayerId2v2" name="rightPlayerId" required defaultValue="">
+                      <PlayerOptions players={availablePlayers} />
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <label className="form-label" htmlFor="rightTeammateId2v2">
+                      Team 2 · Player 2
+                    </label>
+                    <select className="select" id="rightTeammateId2v2" name="rightTeammateId" required defaultValue="">
+                      <PlayerOptions players={availablePlayers} />
+                    </select>
+                  </div>
+                  <div className="form-row full">
+                    <label className="form-label" htmlFor="notes2v2">
+                      Notes
+                    </label>
+                    <input className="input" id="notes2v2" name="notes" placeholder="Например: командная серия bo3" />
+                    <p className="field-hint">В список попадают только активные игроки.</p>
+                  </div>
+                  <div className="form-row full">
+                    <button className="button primary" type="submit">
+                      Создать матч 2v2
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
         )}
       </section>
     </main>
